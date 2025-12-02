@@ -1,0 +1,43 @@
+name: Automação da base de dados
+
+on:
+  push:
+    branches: [ 'main' ]
+  schedule:
+    - cron: '0 0 * * *'
+
+
+jobs:
+  Pipeline:
+    runs-on: ubuntu-22.04
+    
+    steps:
+      - name: Clonar repositório
+        uses: actions/checkout@v4
+
+      - name: Instalar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Instalar Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: 1.8.3
+
+      - name: Instalar pacotes Python
+        run: poetry install --no-root
+
+      - name: Atualizar base de dados
+        run: |
+          poetry config virtualenvs.prefer-active-python true
+          poetry run python -c "exec(open('01-bibliotecas.py').read());
+          exec(open('02-funcoes.py').read()); \
+          exec(open('03-coleta.py').read()); \
+          exec(open('04-tratamento.py').read()); \
+          exec(open('05-disponibilizacao.py').read())"
+
+      - name: Commit & Push
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: Atualização automática de dados

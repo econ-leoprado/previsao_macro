@@ -1,0 +1,26 @@
+[tool.poetry]
+name = "previsao-macro"
+version = "0.1.0"
+description = "Projeto de curso da Análise Macro."
+authors = ["Fernando da Silva <fernando@fortietwo.com>"]
+license = "N/A"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+numpy = "^2.1.0"
+pandas = "^2.2.2"
+openpyxl = "^3.1.5"
+pyarrow = "^17.0.0"
+fastparquet = "^2024.5.0"
+skforecast = "^0.13.0"
+scikit-learn = "^1.5.1"
+statsmodels = "^0.14.2"
+shiny = "^1.0.0"
+shinyswatch = "^0.7.0"
+plotnine = "^0.13.6"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
