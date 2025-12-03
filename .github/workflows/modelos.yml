@@ -1,0 +1,42 @@
+name: Automação das previsões
+
+on:
+  push:
+    branches: [ 'main' ]
+  schedule:
+    - cron: '0 0 15 * *'
+
+
+jobs:
+  Modelagem:
+    runs-on: ubuntu-22.04
+    
+    steps:
+      - name: Clonar repositório
+        uses: actions/checkout@v4
+
+      - name: Instalar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Instalar Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: 1.8.3
+
+      - name: Instalar pacotes Python
+        run: poetry install --no-root
+
+      - name: Atualizar previsões
+        run: |
+          poetry config virtualenvs.prefer-active-python true
+          poetry run python 06-ipca.py
+          poetry run python 07-cambio.py
+          poetry run python 08-pib.py
+          poetry run python 09-selic.py
+
+      - name: Commit & Push
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: Atualização automática de previsões
