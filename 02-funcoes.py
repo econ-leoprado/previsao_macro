@@ -16,7 +16,7 @@ def ler_csv(*args, **kwargs):
   return None
 
 # Separa intervalo de datas em janelas de 10 anos para coleta de dados em blocos
-# na API do BCB/SGS
+#na API do BCB/SGS
 def split_date_range(start_date_str, end_date_str, interval_years=5):
   start_date = datetime.strptime(start_date_str, "%d/%m/%Y")
   end_date = datetime.strptime(end_date_str, "%d/%m/%Y")
