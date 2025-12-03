@@ -16,7 +16,7 @@ def ler_csv(*args, **kwargs):
   return None
 
 # Separa intervalo de datas em janelas de 10 anos para coleta de dados em blocos
-#na API do BCB/SGS
+# na API do BCB/SGS
 def split_date_range(start_date_str, end_date_str, interval_years=5):
   start_date = datetime.strptime(start_date_str, "%d/%m/%Y")
   end_date = datetime.strptime(end_date_str, "%d/%m/%Y")
@@ -66,7 +66,7 @@ def coleta_bcb_sgs(codigo, nome, freq, data_inicio = "01/01/2000", data_fim = (p
         .assign(data = lambda x: pd.to_datetime(x.data, format = "%d/%m/%Y"))
         .set_index("data")
     )
-  
+
 
 # Coleta dados da API do Banco Central (ODATA)
 def coleta_bcb_odata(codigo, nome):
@@ -128,13 +128,26 @@ def coleta_fred(codigo, nome):
   try:
     print(f"Coletando a série {codigo} ({nome})")
     resposta = ler_csv(
-        filepath_or_buffer = url,
-        converters = {"DATE": lambda x: pd.to_datetime(x)}
+        filepath_or_buffer = url
         )
-  except:
-    raise Exception(f"Falha na coleta da série {codigo} ({nome})")
+  except Exception as e:
+    raise Exception(f"Falha na coleta da série {codigo} ({nome}): {e}")
   else:
-    return resposta.rename(columns = {"DATE": "data", codigo: nome})
+    # Identify the date column and ensure it's named 'data'
+    date_column_name = None
+    if 'DATE' in resposta.columns:
+        date_column_name = 'DATE'
+    elif 'observation_date' in resposta.columns:
+        date_column_name = 'observation_date'
+    
+    if date_column_name:
+        resposta[date_column_name] = pd.to_datetime(resposta[date_column_name])
+        # Rename date column to 'data' and the series column using 'nome'
+        resposta = resposta.rename(columns={date_column_name: "data", codigo: nome})
+    else:
+        raise Exception(f"Falha ao encontrar coluna de data para a série {codigo} ({nome})")
+        
+    return resposta
 
 # Coleta dados via link da IFI
 def coleta_ifi(codigo, nome):
