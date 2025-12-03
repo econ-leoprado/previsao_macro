@@ -18,7 +18,8 @@ for serie in input_bcb_sgs.index:
   ser = input_bcb_sgs.iloc[serie]
   df_temp = coleta_bcb_sgs(
       codigo = ser["Input de Coleta"],
-      nome = ser["Identificador"]
+      nome = ser["Identificador"],
+      freq = ser["Frequência"]
       )
   df_bruto_bcb_sgs[ser["Frequência"]].append(df_temp)
 
