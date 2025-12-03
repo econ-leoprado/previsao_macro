@@ -1,3 +1,4 @@
+
 # Retenta ler um CSV se falhar download
 def ler_csv(*args, **kwargs):
   max_tentativas = 5
@@ -14,14 +15,48 @@ def ler_csv(*args, **kwargs):
   print(f"Falha após {max_tentativas} tentativas.")
   return None
 
-# Coleta dados da API do Banco Central (SGS)
-def coleta_bcb_sgs(codigo, nome, data_inicio = "01/01/2000", data_fim = (pd.to_datetime("today") + pd.offsets.DateOffset(months = 36)).strftime("%d/%m/%Y")):
+# Separa intervalo de datas em janelas de 10 anos para coleta de dados em blocos
+# na API do BCB/SGS
+def split_date_range(start_date_str, end_date_str, interval_years=5):
+  start_date = datetime.strptime(start_date_str, "%d/%m/%Y")
+  end_date = datetime.strptime(end_date_str, "%d/%m/%Y")
 
-  url = f"https://api.bcb.gov.br/dados/serie/bcdata.sgs.{codigo}/dados?formato=csv&dataInicial={data_inicio}&dataFinal={data_fim}"
+  result = []
+  current_start = start_date
+
+  while current_start < end_date:
+    try:
+      current_end = current_start.replace(year=current_start.year + interval_years)
+    except ValueError:
+      current_end = current_start + timedelta(days=365 * interval_years)
+
+    if current_end > end_date:
+      current_end = end_date
+
+    result.append((
+      current_start.strftime("%d/%m/%Y"),
+      current_end.strftime("%d/%m/%Y")
+    ))
+    current_start = current_end
+
+  return result
+
+
+# Coleta dados da API do Banco Central (SGS)
+def coleta_bcb_sgs(codigo, nome, freq, data_inicio = "01/01/2000", data_fim = (pd.to_datetime("today") + pd.offsets.DateOffset(months = 36)).strftime("%d/%m/%Y")):
+
+  if freq == "Diária":
+    datas_inicio = split_date_range(data_inicio, data_fim)
+  else:
+    datas_inicio = [(data_inicio, data_fim)]
 
   try:
     print(f"Coletando a série {codigo} ({nome})")
-    resposta = ler_csv(filepath_or_buffer = url, sep = ";", decimal = ",")
+    resposta = []
+    for d in datas_inicio:
+      url = f"https://api.bcb.gov.br/dados/serie/bcdata.sgs.{codigo}/dados?formato=csv&dataInicial={d[0]}&dataFinal={d[1]}"
+      resposta.append(ler_csv(filepath_or_buffer = url, sep = ";", decimal = ","))
+    resposta = pd.concat(resposta)
   except:
     raise Exception(f"Falha na coleta da série {codigo} ({nome})")
   else:
@@ -31,6 +66,7 @@ def coleta_bcb_sgs(codigo, nome, data_inicio = "01/01/2000", data_fim = (pd.to_d
         .assign(data = lambda x: pd.to_datetime(x.data, format = "%d/%m/%Y"))
         .set_index("data")
     )
+  
 
 # Coleta dados da API do Banco Central (ODATA)
 def coleta_bcb_odata(codigo, nome):
