@@ -142,7 +142,7 @@ dados_cenario_constante = (
 # Coleta dados de expectativas de inflação (expec_ipca_12m)
 dados_focus_expec_ipca_12m = (
     pd.read_csv(
-        filepath_or_buffer = f"https://olinda.bcb.gov.br/olinda/servico/Expectativas/versao/v1/odata/ExpectativasMercadoInflacao12Meses?$filter=Indicador%20eq%20'IPCA'%20and%20Suavizada%20eq%20'S'%20and%20baseCalculo%20eq%200%20and%20Data%20ge%20'{(periodo_previsao.min() - pd.offsets.MonthBegin(3)).strftime('%Y-%m-%d')}'&$format=text/csv",
+        filepath_or_buffer = f"https://olinda.bcb.gov.br/olinda/servico/Expectativas/versao/v1/odata/ExpectativasMercadoInflacao12Meses?$filter=Indicador%20eq%20'IPCA'%20and%20Suavizada%20eq%20'S'%20and%20baseCalculo%20eq%200%20and%20Data%20ge%20'{(periodo_previsao.min() - pd.offsets.MonthBegin(h)).strftime('%Y-%m-%d')}'&$format=text/csv",
         decimal = ",",
         converters = {"Data": pd.to_datetime}
         )
@@ -152,7 +152,7 @@ dados_focus_expec_ipca_12m = (
 dados_cenario_inflacao_hiato = (
     dados_focus_expec_ipca_12m
     .assign(
-        data = lambda x: x.Data.dt.to_period("M").dt.to_timestamp(),
+        data=lambda x: (x.Data.dt.to_period("M")).dt.to_timestamp(),
         expec_ipca_12m = lambda x: x.Mediana
         )
     .groupby("data", as_index = False)
@@ -174,7 +174,13 @@ dados_cenario_inflacao_hiato = (
     .ffill()
     .query("index >= @periodo_previsao.min()")
     .drop("data", axis = "columns")
-    .join(other = dados_tratados.filter(["meta_inflacao"]), how = "left")
+    .join(other = dados_tratados.filter(["meta_inflacao"]).reindex(
+        pd.date_range(
+            dados_tratados.index.min(),           # início igual ao da série
+            dados_tratados.index.max() + pd.DateOffset(months=12),  # +12 meses
+            freq="MS"
+        )).ffill(), how = "left"
+    )
     .ffill()
     .assign(inflacao_hiato = lambda x: x.expec_ipca_12m - x.meta_inflacao.shift(-h))
     .query("index <= @periodo_previsao.max()")

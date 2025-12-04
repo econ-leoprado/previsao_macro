@@ -1,6 +1,6 @@
 # Planilha de metadados
 df_metadados = pd.read_excel(
-    io = "https://docs.google.com/spreadsheets/d/1CIssynnpoEPt3DeZSWXMMEw3P3b7-mGN/export?format=xlsx",
+    io = "https://docs.google.com/spreadsheets/d/1x8Ugm7jVO7XeNoxiaFPTPm1mfVc3JUNvvVqVjCioYmE/export?format=xlsx",
     sheet_name = "Metadados"
     )
 

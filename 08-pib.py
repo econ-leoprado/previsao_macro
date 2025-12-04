@@ -42,6 +42,7 @@ metadados = (
 # Importa dados online
 dados_brutos_m = pd.read_parquet("dados/df_mensal.parquet")
 dados_brutos_t = pd.read_parquet("dados/df_trimestral.parquet")
+
 # Converte frequência
 dados_tratados = (
     dados_brutos_m

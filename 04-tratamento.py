@@ -209,13 +209,14 @@ for f in df_tratado_ibge_sidra.items():
 df_tratado_fred = df_bruto_fred.copy()
 
 for f in df_tratado_fred.items():
-  df_temp = f[1][0].set_index("data") # Corrected to "data"
+  df_temp = f[1][0].set_index("observation_date")
   for df in f[1][1:]:
     df_temp = df_temp.join(
-        other = df.set_index("data"), # Corrected to "data"
+        other = df.set_index("observation_date"),
         how = "outer"
         )
-  df_tratado_fred[f[0]] = df_temp # 'data' is already the index, no need for rename_axis if it was previously set correctly
+  df_temp = df_temp.rename_axis(index='data')  
+  df_tratado_fred[f[0]] = df_temp
 
 # Agrega dados de frequência diária para mensal por média
 df_tratado_fred["Mensal"] = (
