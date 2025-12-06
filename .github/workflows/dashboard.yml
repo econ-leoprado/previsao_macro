@@ -1,0 +1,27 @@
+name: Automação de deploy
+
+on:
+  push:
+    branches: [ 'main' ]
+  schedule:
+    - cron: '0 1 15 * *'
+
+
+jobs:
+  Shinyapps:
+    runs-on: ubuntu-22.04
+    
+    steps:
+      - name: Clonar repositório
+        uses: actions/checkout@v4
+
+      - name: Publicar dashboard
+        run: |
+          pip install rsconnect-python
+          rsconnect add --account ${{ secrets.ACCOUNT }} --name ${{ secrets.NAME }} --token ${{ secrets.TOKEN }} --secret ${{ secrets.SECRET }}
+          rsconnect deploy shiny . --title previsao_macro
+
+      - name: Commit & Push
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: Deploy automático
