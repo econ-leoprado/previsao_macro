@@ -146,24 +146,36 @@ dados_focus_expec_pib = pd.read_csv(
     )
 
 # Data do relatório Focus usada para construir cenário para Expectativas PIB (expec_pib)
-data_focus_expec_pib = (
+tmp_data_focus_expec_pib_df = (
     dados_focus_expec_pib
     .assign(
         DataReferencia = lambda x: pd.PeriodIndex(
-            x.DataReferencia.str.replace(r"(\d{1})/(\d{4})", r"\2-Q\1", regex = True),
-            freq = "Q"
-            ).to_timestamp()
+            x.DataReferencia.str.replace(r"(\d{1})/(\d{4})", r"\2-Q\1", regex=True),
+            freq="Q"
+        ).to_timestamp()
     )
-    .query("DataReferencia in @periodo_previsao or DataReferencia == @forecaster.last_window.index[1]")
-    .Data
-    .value_counts()
-    .to_frame()
-    .reset_index()
-    .query("count == @h")
-    .query("Data == Data.max()")
-    .Data
-    .to_list()[0]
+    .query("DataReferencia in @periodo_previsao") # Modified line: removed 'or DataReferencia == @forecaster.last_window.index[1]'
 )
+
+# Conta quantos registros existem por data de relatório (Data)
+contagens = (
+    tmp_data_focus_expec_pib_df # Used temporary df here
+    .groupby("Data", as_index=False)
+    .size()
+    .rename(columns={"size": "count"})
+)
+
+# 1) Tenta pegar datas com pelo menos h previsões (count >= h)
+datas_com_h = contagens.loc[contagens["count"] >= h, "Data"]
+
+if not datas_com_h.empty:
+    # Mais recente entre as que têm pelo menos h previsões
+    data_focus_expec_pib = datas_com_h.max()
+else:
+    # Fallback: pega a data de relatório mais recente disponível
+    if contagens.empty:
+        raise ValueError("Nenhuma data de relatório Focus encontrada para o período especificado.")
+    data_focus_expec_pib = contagens["Data"].max()
 
 # Constrói cenário para expectativas do PIB (expec_pib)
 dados_cenario_expec_pib = (
@@ -174,7 +186,7 @@ dados_cenario_expec_pib = (
             freq = "Q"
             ).to_timestamp()
     )
-    .query("DataReferencia in @periodo_previsao or DataReferencia == @forecaster.last_window.index[1]")
+    .query("DataReferencia in @periodo_previsao") # Modified line: removed 'or DataReferencia == @forecaster.last_window.index[1]'
     .query("Data == @data_focus_expec_pib")
     .sort_values(by = "DataReferencia")
     .set_index("DataReferencia")
@@ -235,7 +247,7 @@ previsao = forecaster.predict_interval(
 pasta = "previsao"
 if not os.path.exists(pasta):
   os.makedirs(pasta)
-  
+
 pd.concat(
     [y.rename("PIB"),
      previsao.pred.rename("Previsão"),
